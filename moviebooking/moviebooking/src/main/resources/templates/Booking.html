@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>CineBook — Booking Confirmed</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Outfit:wght@200;300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0c0a10;
+            --cream: #f5f0e8;
+            --amber: #e8a530;
+            --amber-dim: rgba(232, 165, 48, 0.1);
+            --amber-glow: rgba(232, 165, 48, 0.3);
+            --teal: #00d4a8;
+            --teal-dim: rgba(0, 212, 168, 0.1);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--ink);
+            color: var(--cream);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ── LAYERED BACKGROUND ── */
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 50% 30%, rgba(0, 212, 168, 0.05) 0%, transparent 65%),
+                radial-gradient(ellipse 80% 60% at 15% 80%, rgba(192, 57, 43, 0.18) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 60% at 85% 20%, rgba(232, 165, 48, 0.07) 0%, transparent 55%),
+                linear-gradient(180deg, #0c0a10 0%, #080610 100%);
+        }
+
+        .grain {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px;
+        }
+
+        /* ── FILM STRIPS ── */
+        .strip {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 40px;
+            z-index: 5;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .strip-left {
+            left: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .strip-right {
+            right: 0;
+            border-left: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .strip-holes {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 0;
+            height: 100%;
+        }
+
+        .hole {
+            width: 20px;
+            height: 14px;
+            border-radius: 3px;
+            background: rgba(12, 10, 16, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            flex-shrink: 0;
+        }
+
+        /* ── CONFETTI ── */
+        .confetti-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .confetto {
+            position: absolute;
+            animation: fall linear both;
+        }
+
+        @keyframes fall {
+            from {
+                transform: translateY(-20px) rotate(0deg);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateY(110vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* ── TICKET CONTAINER ── */
+        .ticket-stage {
+            position: relative;
+            z-index: 20;
+            width: 500px;
+            animation: ticketReveal 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        @keyframes ticketReveal {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* ── TICKET CARD ── */
+        .ticket {
+            background: rgba(245, 240, 232, 0.04);
+            backdrop-filter: blur(32px) saturate(180%);
+            border: 1px solid rgba(232, 165, 48, 0.18);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow:
+                0 50px 120px rgba(0, 0, 0, 0.75),
+                0 0 0 1px rgba(255, 255, 255, 0.03),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            position: relative;
+        }
+
+        /* Amber top accent */
+        .ticket-top-bar {
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, var(--amber) 20%, #f0c060 50%, var(--amber) 80%, transparent 100%);
+        }
+
+        /* ── HEADER SECTION ── */
+        .ticket-header {
+            padding: 40px 44px 32px;
+            text-align: center;
+            border-bottom: 1px dashed rgba(245, 240, 232, 0.08);
+            position: relative;
+        }
+
+        .ticket-header::after {
+            content: '◆';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(245, 240, 232, 0.04);
+            padding: 0 12px;
+            color: var(--amber);
+            font-size: 10px;
+        }
+
+        .cinebook-label {
+            font-family: 'Playfair Display', serif;
+            font-size: 12px;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--amber);
+            opacity: 0.7;
+            margin-bottom: 26px;
+            font-weight: 400;
+        }
+
+        /* Animated success ring */
+        .success-ring {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 24px;
+            position: relative;
+        }
+
+        .success-ring svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: rgba(0, 212, 168, 0.08);
+            stroke-width: 2.5;
+        }
+
+        .ring-progress {
+            fill: none;
+            stroke: var(--teal);
+            stroke-width: 2.5;
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            stroke-linecap: round;
+            transform-origin: center;
+            transform: rotate(-90deg);
+            animation: ringDraw 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
+        }
+
+        @keyframes ringDraw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .ring-glow {
+            fill: none;
+            stroke: var(--teal);
+            stroke-width: 8;
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            stroke-linecap: round;
+            transform-origin: center;
+            transform: rotate(-90deg);
+            opacity: 0.15;
+            animation: ringDraw 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
+            filter: blur(4px);
+        }
+
+        .check-mark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 38px;
+            animation: checkBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1.4s both;
+        }
+
+        @keyframes checkBounce {
+            from {
+                transform: translate(-50%, -50%) scale(0) rotate(-30deg);
+                opacity: 0;
+            }
+
+            to {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        .confirmed-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 40px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+
+        .confirmed-sub {
+            font-size: 11px;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: rgba(245, 240, 232, 0.3);
+            font-weight: 400;
+        }
+
+        /* ── BODY SECTION ── */
+        .ticket-body {
+            padding: 32px 44px;
+        }
+
+        .booking-message {
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+            font-size: 16px;
+            font-style: italic;
+            font-weight: 400;
+            color: rgba(245, 240, 232, 0.6);
+            line-height: 1.65;
+            margin-bottom: 30px;
+        }
+
+        /* Ticket stubs */
+        .stubs-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .stub {
+            text-align: center;
+            padding: 16px 12px;
+            background: rgba(245, 240, 232, 0.03);
+            border: 1px solid rgba(245, 240, 232, 0.06);
+            border-radius: 12px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .stub:hover {
+            background: rgba(245, 240, 232, 0.05);
+            border-color: rgba(232, 165, 48, 0.2);
+        }
+
+        .stub-label {
+            font-size: 9px;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(245, 240, 232, 0.25);
+            margin-bottom: 7px;
+            font-weight: 500;
+        }
+
+        .stub-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--amber);
+        }
+
+        /* Barcode */
+        .barcode-wrap {
+            height: 44px;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            align-items: stretch;
+            gap: 1.5px;
+            margin-bottom: 0;
+            opacity: 0.22;
+        }
+
+        .bar {
+            background: var(--cream);
+            flex: 1;
+            border-radius: 1px;
+        }
+
+        .bar:nth-child(even) {
+            flex: 2;
+        }
+
+        .bar:nth-child(3n) {
+            flex: 0.5;
+        }
+
+        .bar:nth-child(5n) {
+            flex: 3;
+        }
+
+        /* ── PERFORATED TEAR LINE ── */
+        .tear-line {
+            position: relative;
+            height: 1px;
+            background: repeating-linear-gradient(90deg,
+                    rgba(245, 240, 232, 0.12) 0px, rgba(245, 240, 232, 0.12) 6px,
+                    transparent 6px, transparent 14px);
+            margin: 0 -1px;
+        }
+
+        .tear-circle-l,
+        .tear-circle-r {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--ink);
+            border: 1px solid rgba(245, 240, 232, 0.06);
+        }
+
+        .tear-circle-l {
+            left: -14px;
+        }
+
+        .tear-circle-r {
+            right: -14px;
+        }
+
+        /* ── FOOTER ── */
+        .ticket-footer {
+            padding: 24px 44px 32px;
+            text-align: center;
+        }
+
+        .browse-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            padding: 15px 40px;
+            border-radius: 12px;
+            background: var(--amber);
+            color: var(--ink);
+            font-family: 'Outfit', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .browse-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-100%) skewX(-15deg);
+            transition: transform 0.6s ease;
+        }
+
+        .browse-btn:hover::after {
+            transform: translateX(120%) skewX(-15deg);
+        }
+
+        .browse-btn:hover {
+            background: #f0b840;
+            box-shadow: 0 10px 36px rgba(232, 165, 48, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Bottom teal pulse accent */
+        .ticket-bottom-bar {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--teal), transparent);
+            opacity: 0.4;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-layer"></div>
+    <div class="grain"></div>
+
+    <div class="strip strip-left">
+        <div class="strip-holes" id="holesL"></div>
+    </div>
+    <div class="strip strip-right">
+        <div class="strip-holes" id="holesR"></div>
+    </div>
+
+    <div class="confetti-layer" id="confetti"></div>
+
+    <div class="ticket-stage">
+        <div class="ticket">
+            <div class="ticket-top-bar"></div>
+
+            <!-- HEADER -->
+            <div class="ticket-header">
+                <div class="cinebook-label">CineBook &nbsp;·&nbsp; Premium Experience</div>
+
+                <div class="success-ring">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="ring-bg" cx="50" cy="50" r="45" />
+                        <circle class="ring-glow" cx="50" cy="50" r="45" />
+                        <circle class="ring-progress" cx="50" cy="50" r="45" />
+                    </svg>
+                    <div class="check-mark">✔</div>
+                </div>
+
+                <div class="confirmed-text">Booking Confirmed</div>
+                <div class="confirmed-sub">Your seat is reserved</div>
+            </div>
+
+            <!-- BODY -->
+            <div class="ticket-body">
+
+                <!-- Thymeleaf message — preserved exactly -->
+                <p class="booking-message" th:text="${message}">
+                    You have successfully booked your ticket. Enjoy the show!
+                </p>
+
+                <div class="stubs-row">
+                    <div class="stub">
+                        <div class="stub-label">Hall</div>
+                        <div class="stub-value">A3</div>
+                    </div>
+                    <div class="stub">
+                        <div class="stub-label">Seat</div>
+                        <div class="stub-value">F12</div>
+                    </div>
+                    <div class="stub">
+                        <div class="stub-label">Format</div>
+                        <div class="stub-value">4K</div>
+                    </div>
+                </div>
+
+                <div class="barcode-wrap" id="barcode"></div>
+            </div>
+
+            <!-- TEAR LINE -->
+            <div class="tear-line">
+                <div class="tear-circle-l"></div>
+                <div class="tear-circle-r"></div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="ticket-footer">
+                <a href="/movies" class="browse-btn">← Browse More Films</a>
+            </div>
+
+            <div class="ticket-bottom-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        // Film holes
+        ['holesL', 'holesR'].forEach(id => {
+            const el = document.getElementById(id);
+            for (let i = 0; i < 40; i++) {
+                const h = document.createElement('div');
+                h.className = 'hole';
+                el.appendChild(h);
+            }
+        });
+
+        // Barcode bars
+        const bc = document.getElementById('barcode');
+        for (let i = 0; i < 70; i++) {
+            const b = document.createElement('div');
+            b.className = 'bar';
+            bc.appendChild(b);
+        }
+
+        // Confetti
+        const palette = ['#e8a530', '#f0c060', '#00d4a8', '#c0392b', '#f5f0e8', '#7b5ea7'];
+        const cf = document.getElementById('confetti');
+        for (let i = 0; i < 70; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetto';
+            const size = 4 + Math.random() * 7;
+            const isCircle = Math.random() > 0.45;
+            c.style.cssText = `
+            left: ${Math.random() * 100}%;
+            top: -12px;
+            width: ${size}px;
+            height: ${isCircle ? size : size * 1.6}px;
+            background: ${palette[Math.floor(Math.random() * palette.length)]};
+            border-radius: ${isCircle ? '50%' : '2px'};
+            animation-duration: ${2.5 + Math.random() * 3}s;
+            animation-delay: ${Math.random() * 2.2}s;
+            opacity: 0.85;
+        `;
+            cf.appendChild(c);
+        }
+    </script>
+
+</body>
+
+</html>
