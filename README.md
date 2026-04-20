@@ -1,4 +1,4 @@
-Go to OOAD_mini_project/moviebooking/moviebooking/src/main/java/com/example/moviebooking/MoviebookingApplication.java and run MoviebookingApplication.java
+Go to /moviebooking/moviebooking/src/main/java/com/example/moviebooking/MoviebookingApplication.java and run MoviebookingApplication.java
 
 Then go to localhost 8080
 
