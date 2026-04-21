@@ -5,3 +5,4 @@ Then go to localhost 8080
 First Register and then login
 
 Then you can add movies and browse movies and pay with card or upi
+
